@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 第三方 action 一律锚定完整 commit SHA：本 workflow 持有 contents:write，
+      # 可变 ref（@stable/@v2）被上游劫持即等于交出发布令牌
+      - name: 安装 Rust stable
+        uses: dtolnay/rust-toolchain@51b01a1e7494c4fbb7c88a7888451b1ecf2e4f5b
+
+      - name: Rust 编译缓存
+        uses: swatinem/rust-cache@82a92a6e8b1c350907a3235c95c0ea9c33a29c40
+
+      - name: 安装 Node LTS
+        uses: actions/setup-node@v4
+
+      - name: 构建双工件（绿色版 + 安装包）
+        shell: pwsh
+        run: |
+          .\build-portable.ps1
+          # 前端已在绿色版那一步构建过，安装包复用产物，不再重复 npm install / tsc / vite build
+          .\build-installer.ps1 -SkipFrontend
+
+      - name: 收集产物
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $expected = @(
+            "dist/DeepSeekChat-v$($env:GITHUB_REF_NAME -replace '^v', '')-portable.exe",
+            "dist/DeepSeekChat-v$($env:GITHUB_REF_NAME -replace '^v', '')-setup.exe"
+          )
+          foreach ($f in $expected) {
+            if (-not (Test-Path $f)) { throw "缺少预期产物: $f（构建脚本输出名变更？）" }
+          }
+          Get-ChildItem dist | ForEach-Object { Write-Host "$($_.Name)  $([math]::Round($_.Length/1MB,2)) MB" }
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@72f2c996ddff5c2b64c5ca1774c9fc4e2d254f92
+        with:
+          files: |
+            dist/DeepSeekChat-*-portable.exe
+            dist/DeepSeekChat-*-setup.exe
+          # glob 落空时默认静默发空 Release（exit 0）——显式失败
+          fail_on_unmatched_files: true
+          generate_release_notes: true

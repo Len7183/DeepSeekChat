@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schema.tauri.app/capability/2",
+  "identifier": "default-capabilities",
+  "windows": ["main", "settings", "menu", "oauth-*"],
+  "remote": {
+    "urls": ["https://chat.deepseek.com/*", "https://*.deepseek.com/*"]
+  },
+  "permissions": [
+    "core:default",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
+    "core:window:allow-start-dragging",
+    "core:webview:allow-reparent"
+  ]
+}

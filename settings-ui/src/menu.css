@@ -1,0 +1,85 @@
+/* 托盘菜单（无边框透明窗口内自绘，跟随主题，紧凑尺寸） */
+
+html,
+body {
+  background: transparent;
+  overflow: hidden;
+}
+
+#menu {
+  position: fixed;
+  inset: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  /* 阴影半径受 3px 透明边距限制：改小模糊使其完整落在窗口内，避免底边硬切 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+#menu.pop {
+  animation: menuIn 260ms var(--spring) both;
+}
+
+#menu button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  /* flex 均分剩余高度：三个按钮严格等高、文字垂直居中，上下左右间距一致 */
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  padding: 0 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 140ms ease, transform 260ms var(--spring);
+}
+
+#menu button:hover {
+  background: var(--menu-hover);
+}
+
+#menu button:active {
+  transform: scale(0.96);
+}
+
+#menu button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+
+#menu hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  /* 左右缩进与按钮文字对齐（11px） */
+  margin: 3px 11px;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #menu.pop {
+    animation: none;
+  }
+  #menu button {
+    transition: none;
+  }
+  #menu button:active {
+    transform: none;
+  }
+}

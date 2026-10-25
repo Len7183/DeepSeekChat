@@ -1,0 +1,70 @@
+/* DeepSeekChat 主题变量：深浅两套，色值为对照设计稿实测得到的值。
+   html.dark 切换深色。设置窗口 / 错误页 / 托盘菜单共用。 */
+
+:root {
+  color-scheme: light;
+
+  /* 弹簧曲线：过冲回弹，仅用于控件交互反馈（设置页滑块、托盘菜单入场）。
+     三页共用，故定义在共用主题表里，页面各自的主题表不再重复声明。 */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* 浅色（实测：页面底 #FFFFFF、卡片 #F4F4F5、正文 #1F2328、次要 #6B7280、选中底 #E3E8FF） */
+  --bg: #ffffff;
+  --titlebar: #ffffff;
+  --card: #f4f4f5;
+  --text: #1f2328;
+  --text-2: #6b7280;
+  --seg-bg: #ffffff;
+  --seg-selected-bg: #e3e8ff;
+  --seg-selected-text: #3d5be0;
+  --toggle-off: #dcdee2;
+  --accent: #4c6afc;
+  --border: #e6e7e9;
+  --menu-hover: #ebebed;
+  --toast-bg: rgba(31, 35, 40, 0.92);
+  --toast-text: #ffffff;
+  --danger: #d93025;
+}
+
+html.dark {
+  color-scheme: dark;
+
+  /* 深色（实测：页面底 #151517、卡片 #1F1F21、正文 #E8EAED、次要 #9499A0、强调 #4C6AFC、选中底 #1D223B） */
+  --bg: #151517;
+  --titlebar: #000000;
+  --card: #1f1f21;
+  --text: #e8eaed;
+  --text-2: #9499a0;
+  --seg-bg: #151517;
+  --seg-selected-bg: #1d223b;
+  --seg-selected-text: #8fa3ff;
+  --toggle-off: #3a3b3e;
+  /* 深色下强调色提亮（#4c6afc 在 #151517 上仅 ≈4.15:1，不达 AA；#8fa3ff ≈7.7:1） */
+  --accent: #8fa3ff;
+  --border: #2a2b2e;
+  --menu-hover: #2a2b2e;
+  --toast-bg: rgba(232, 234, 237, 0.95);
+  --toast-text: #1f2328;
+  --danger: #f28b82;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+/* 可复制文本（错误页详情等）重新启用选择 */
+.selectable,
+[contenteditable="true"] {
+  user-select: text;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 0.8125rem; /* 13px @ 默认 16px 根字号，跟随用户系统字号偏好 */
+}

@@ -1,0 +1,49 @@
+[package]
+name = "deepseekchat"
+version = "0.1.0"
+description = "DeepSeekChat：DeepSeek 网页版桌面客户端（非官方）"
+authors = ["DeepSeekChat Contributors"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.77"
+default-run = "deepseekchat"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-ico", "image-png"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-log = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+
+# Windows 平台 API（修剪工作集、DWM 标题栏着色、WebView2 挂起等）
+# 只声明本项目直接调用的模块：漏声明时能编过纯属其它依赖碰巧开着同名 feature，
+# 上游一改就会断在编译期。
+[target."cfg(windows)".dependencies]
+webview2-com = "0.39"
+windows = { version = "0.62", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Dwm",
+  "Win32_System_Threading",
+  "Win32_System_ProcessStatus",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_Registry",
+  "Win32_System_LibraryLoader",
+  "Win32_System_Com",
+  "Win32_System_SystemInformation",
+  "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_Security",
+] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

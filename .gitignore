@@ -1,0 +1,76 @@
+# 依赖与构建产物
+node_modules/
+settings-ui/dist/
+src-tauri/target/
+src-tauri/gen/
+
+# 运行时数据目录（不进仓库）
+# 内含 config.json / window-state.json / logs\ / webview\；
+# webview\ 是真实登录态、聊天记录与浏览数据（Cookies、Login Data、History、Web Data 等）。
+# 锚定到仓库根（前导 /）：不锚定的 data/ 会把任意深度的同名目录（如
+# settings-ui/src/data/ 测试夹具）一并忽略
+/data/
+/data.bak/
+.write-test
+
+# 工具链与第三方安装包（不入仓库）
+# 例外：resources 下的微软官方 WebView2 Bootstrapper 是构建必需素材，随包分发，保留
+rustup-init.exe
+vs_BuildTools.exe
+*Setup.exe
+*setup.exe
+*.msi
+!src-tauri/resources/MicrosoftEdgeWebview2Setup.exe
+
+# 本地凭据与签名材料（一律不进仓库）
+.env
+.env.*
+!.env.example
+.npmrc
+.cargo/config.toml
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.cer
+*.crt
+*.der
+credentials.json
+secrets.json
+
+# 日志与增量构建缓存
+*.log
+*.tsbuildinfo
+
+# 编辑器与系统
+.vs/
+.vscode/
+.idea/
+.zcode/
+*.code-workspace
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 编辑器与合并残留
+*.tmp
+*.bak
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+
+# QA 截图（qa-windows.ps1 / capture-window.ps1 / diag-windows.ps1 的默认输出）
+scripts/shot*.png
+
+# 构建产物
+dist/
+
+# 图标素材：DeepSeek 官方 favicon 原始字节（商标归官方，原始素材不再分发，故不入库）；
+# 注意：由它派生的 src-tauri/icons/* 是构建必需资源，入库并随包分发，商标声明见 README / LICENSE
+# 需要重新生成图标时自行下载到该路径，再跑 scripts/gen-icon.mjs
+scripts/ds-favicon.ico
+.dsh-pilot/

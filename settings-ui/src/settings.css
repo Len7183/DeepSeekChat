@@ -1,0 +1,240 @@
+/* 设置窗口布局（对照设计稿）。
+   动效只保留控件交互本身：按钮按压/选中、滑块与开关圆点的拖动跟手 + 吸附。
+   弹簧曲线 --spring 与配色变量同在 theme.css（三页共用）。 */
+
+#app {
+  padding: 8px 20px 40px;
+}
+
+h1 {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 14px 0 18px;
+}
+
+.section-label {
+  font-size: 12px;
+  color: var(--text-2);
+  margin: 0 2px 8px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 13px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card-text {
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.card-sub {
+  font-size: 11.5px;
+  color: var(--text-2);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* 开关：圆点位移由 --knob-x 驱动；轨道色由进度 --p（0 关 → 1 开）连续插值。
+   参考 markusenglund/react-switch 的 getBackgroundColor：拖动时颜色跟手渐变，
+   点按/松手时用不回弹的缓动过渡到目标色（弹簧缓动会让 --p 过冲越出 [0,1]）。
+   状态变量一律声明在 .toggle 上（不声明在 ::after 上）：伪元素自身的声明会盖掉
+   从元素继承来的内联值，那样拖动时 JS 写的 --knob-x 就失效、圆点不跟手。 */
+@property --p {
+  syntax: "<number>";
+  initial-value: 0;
+  inherits: false;
+}
+
+.toggle:focus-visible,
+.segmented button:focus-visible,
+#footer .footer-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.toggle {
+  flex: none;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent) clamp(0%, calc(var(--p) * 100%), 100%), var(--toggle-off));
+  position: relative;
+  cursor: pointer;
+  touch-action: none;
+  --knob-w: 16px;
+  --knob-x: 0px;
+  transition: --p 260ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: var(--knob-w);
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transform: translateX(var(--knob-x));
+  transition:
+    transform 420ms var(--spring),
+    width 180ms ease;
+}
+
+.toggle.on {
+  --p: 1;
+  /* 40px 轨道 − 圆点宽 − 2×3px 内缩：静态 16px 圆点 = 18px，
+     按下/拖动拉伸到 19px 时自动 = 15px（由 --knob-w 派生，无需第二条规则） */
+  --knob-x: calc(40px - var(--knob-w) - 6px);
+}
+
+/* 按下/拖动时圆点横向拉伸（按压反馈）。行程由上面的 calc 自动收缩，
+   右缘始终内缩 3px，拉伸后的圆点不会顶到轨道边缘。 */
+.toggle:active,
+.toggle.dragging {
+  --knob-w: 19px;
+}
+
+/* 拖动中：轨道色与圆点都直接跟手，无过渡 */
+.toggle.dragging,
+.toggle.dragging::after {
+  transition: none;
+}
+
+/* 分段选择（关闭按钮行为）：点按切换 + 滑块可拖拽吸附 */
+.segmented {
+  flex: none;
+  position: relative;
+  display: flex;
+  background: var(--seg-bg);
+  border-radius: 14px;
+  --seg-pad: 2px;
+  padding: var(--seg-pad);
+  touch-action: none;
+  cursor: grab;
+  /* 胶囊在轨道内滑动：弹簧曲线必然过冲，不裁剪就会鼓出圆角框外 */
+  overflow: hidden;
+}
+
+.segmented.dragging {
+  cursor: grabbing;
+}
+
+.seg-thumb {
+  position: absolute;
+  top: var(--seg-pad);
+  left: 0;
+  height: calc(100% - 2 * var(--seg-pad));
+  border-radius: 12px;
+  background: var(--seg-selected-bg);
+  /* 位移与宽度都用不回弹曲线：轨道内边距只有 2px，弹簧过冲必然让胶囊顶到
+     圆角框边（实测 94px 行程过冲 7.4px）。按压果冻感留给按钮自身的 :active scale。 */
+  transition:
+    transform 320ms cubic-bezier(0.33, 0, 0.2, 1),
+    width 260ms cubic-bezier(0.33, 0, 0.2, 1);
+  will-change: transform;
+  /* 滑块不拦截点击：命中始终落在选项按钮/容器上 */
+  pointer-events: none;
+}
+
+/* 拖拽中：跟手、无弹簧延迟 */
+.segmented.dragging .seg-thumb {
+  transition: none;
+}
+
+.segmented button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  transition: color 220ms var(--spring), transform 300ms var(--spring);
+}
+
+.segmented button[aria-checked="true"] {
+  color: var(--seg-selected-text);
+  font-weight: 500;
+}
+
+.segmented button:active {
+  transform: scale(0.94);
+}
+
+/* 底部小字：数据目录（点击打开）与项目主页。
+   容器与内容都收缩到文字宽度，命中区不含行内空白（整行宽会误触）。 */
+#footer {
+  position: fixed;
+  left: 20px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-2);
+  max-width: calc(100vw - 40px);
+}
+
+#data-dir,
+#about {
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* 底部链接是真按钮（键盘可达），外观保持小字链接样式 */
+.footer-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.footer-link:hover {
+  color: var(--text);
+}
+
+/* 轻提示（仅错误反馈，无动效）：抬高避开固定页脚（约 45px 高）的点击区 */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 52px;
+  transform: translateX(-50%);
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  z-index: 10;
+  max-width: 90%;
+}
+
+#toast[hidden] {
+  display: none;
+}

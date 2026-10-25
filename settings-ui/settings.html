@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:"
+    />
+    <title>DeepSeekChat 设置</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/src/theme.css" />
+    <link rel="stylesheet" href="/src/settings.css" />
+  </head>
+  <body>
+    <main id="app">
+      <h1>设置</h1>
+
+      <div class="section-label">通用</div>
+      <div class="card">
+        <div class="card-text">
+          <div class="card-title">开机自启动</div>
+          <div class="card-sub">登录 Windows 后自动运行</div>
+        </div>
+        <div id="toggle-autostart" class="toggle" role="switch" tabindex="0" aria-checked="false" aria-label="开机自启动"></div>
+      </div>
+
+      <div class="section-label">窗口</div>
+      <div class="card">
+        <div class="card-text">
+          <div class="card-title">关闭按钮行为</div>
+          <div class="card-sub">点击窗口右上角 ✕ 时</div>
+        </div>
+        <div class="segmented" role="radiogroup" aria-label="关闭按钮行为">
+          <button id="seg-hide" type="button" role="radio" aria-checked="false">最小化到托盘</button>
+          <button id="seg-exit" type="button" role="radio" aria-checked="false">直接退出</button>
+        </div>
+      </div>
+
+      <div class="section-label">性能</div>
+      <div class="card">
+        <div class="card-text">
+          <div class="card-title">极致省内存模式</div>
+          <div class="card-sub">禁用 GPU 硬件加速，重启后生效（低配核显可再省约 50~100MB）</div>
+        </div>
+        <div id="toggle-lowmem" class="toggle" role="switch" tabindex="0" aria-checked="false" aria-label="极致省内存模式"></div>
+      </div>
+
+      <footer id="footer">
+        <button id="data-dir" type="button" class="footer-link">数据目录：…</button>
+        <button id="about" type="button" class="footer-link">关于DeepSeekChat</button>
+      </footer>
+    </main>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="/src/settings.ts"></script>
+  </body>
+</html>
