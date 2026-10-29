@@ -19,6 +19,8 @@ jobs:
       # 可变 ref（@stable/@v2）被上游劫持即等于交出发布令牌
       - name: 安装 Rust stable
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: stable
 
       - name: Rust 编译缓存
         uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
