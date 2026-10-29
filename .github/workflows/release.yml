@@ -18,10 +18,10 @@ jobs:
       # 第三方 action 一律锚定完整 commit SHA：本 workflow 持有 contents:write，
       # 可变 ref（@stable/@v2）被上游劫持即等于交出发布令牌
       - name: 安装 Rust stable
-        uses: dtolnay/rust-toolchain@51b01a1e7494c4fbb7c88a7888451b1ecf2e4f5b
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
 
       - name: Rust 编译缓存
-        uses: swatinem/rust-cache@82a92a6e8b1c350907a3235c95c0ea9c33a29c40
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
 
       - name: 安装 Node LTS
         uses: actions/setup-node@v4
@@ -47,7 +47,7 @@ jobs:
           Get-ChildItem dist | ForEach-Object { Write-Host "$($_.Name)  $([math]::Round($_.Length/1MB,2)) MB" }
 
       - name: 发布 Release
-        uses: softprops/action-gh-release@72f2c996ddff5c2b64c5ca1774c9fc4e2d254f92
+        uses: softprops/action-gh-release@6680cc089e59314c4460b839412c25fb6a71ce3b
         with:
           files: |
             dist/DeepSeekChat-*-portable.exe
