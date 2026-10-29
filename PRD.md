@@ -3,7 +3,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 产品名称 | DeepSeekChat |
-| 文档版本 | v0.1.0（未经批准 agent 不得擅自更改或升级软件版本号） |
+| 文档版本 | v0.1.0（未经批准，agent 不得擅自更改或升级软件版本号） |
 | 文档性质 | **现状规格**——描述当前代码已经实现的行为，每条需求标注实现位置，可逐条对照验证；不含未实现的规划项 |
 
 ---
@@ -129,7 +129,7 @@ Windows 桌面端的 DeepSeek 网页版客户端：把 `chat.deepseek.com` 装�
 - 分段：点按切换；滑块可拖动，松手吸附中心最近的选项；拖动中胶囊宽度在两选项间连续插值（只位移不变宽会让宽胶囊顶到内缘）；位移用不回弹曲线防过冲鼓出圆角框。
 - **状态分三层**：已确认（invoke 返回）／期望（乐观更新，界面按它渲染）／待发送（保存进行中产生的新意图）。新意图合并进下一批串行发送；旧响应不覆盖未提交的新意图；保存失败回滚到已确认值并弹 toast，失败之后的新意图保留。
 - 手势被系统取消（`pointercancel`）只回弹到期望状态，**不提交**。
-- **后端保存语义**（`set_config`，`commands.rs`）：整段持串行锁（并发保存共用同一个 `.tmp` 会互相覆盖），顺序「注册表 → 落盘 → 发布内存」；注册表先读真实状态、一致就不重复写（幂等）；落盘失败回滚注册表，内存态不动；回滚再失败显式报错提示重开设置确认。
+- **后端保存语义**（`set_config`，`commands.rs`）：整段持串行锁（并发保存共用同一个 `.tmp` 会互相覆盖），顺序「构建候选配置 → 注册表 → 落盘 → 发布内存」（候选先行：若 config 锁中毒，注册表尚未被改动即报错返回，不留存储分歧）；注册表先读真实状态、一致就不重复写（幂等）；落盘失败回滚注册表，内存态不动；回滚再失败显式报错提示重开设置确认。
 
 **验收**：拖动开关圆点全程跟手不越轨；切换分段胶囊始终不碰圆角框边；点一下主窗口设置窗即关。控件几何可在 `settings-ui/qa-toggle.html` 用真实鼠标拖拽复测（见附录 C）。
 
@@ -172,8 +172,8 @@ data\
 
 | 状态 | 预算上限 | 口径 |
 | --- | --- | --- |
-| 前台 | ≤180MB | 主窗口可见聚焦、页面加载完成后无交互空闲 5 分钟 |
-| 托盘挂起 | ≤80MB | 窗口隐藏、挂起+修剪后稳定 60 秒 |
+| 前台 | ≤100MB | 主窗口可见聚焦、页面加载完成后无交互空闲 5 分钟 |
+| 托盘挂起 | ≤30MB | 窗口隐藏、挂起+修剪后稳定 60 秒 |
 | 托盘唤起 | ≤2 秒 | 普通隐藏路径即时恢复；销毁重建路径允许短暂白屏 |
 
 **实测数字不在本文维护**：本文只锁预算上限与口径，数字统一写在 README「内存（实测）」（`README.en.md` 是它的逐节对译副本，两份要同改）。
@@ -232,7 +232,7 @@ data\
 ### FR-13 导航、外链与登录弹窗
 **实现位置**：`src-tauri/src/webview_cfg.rs`
 
-- 顶层导航白名单：`deepseek.com` 及其子域 + 应用本地页（`tauri.localhost` 恒放行；`localhost`/`127.0.0.1` 仅 debug 构建——release 放行任意本地端口会让页面重定向到本机其他服务时留在应用内）。
+- 顶层导航白名单：`deepseek.com` 及其子域 + 应用本地页（`tauri.localhost` 恒放行；`localhost`/`127.0.0.1` 仅 debug 构建——release 若放行，页面重定向到本机其他服务时会留在应用内）。
 - 其余域名一律交给系统默认浏览器，导航返回 false；日志只记域名。
 - `file:` 协议直接拦掉、**不**外抛：把文件拖到页面非投放区时 WebView2 原生默认行为是导航到 `file://`，若照旧外抛会用系统默认程序打开该文件（拖一下图片就弹出看图器）。
 - **弹窗与新窗口白名单制**：DeepSeek 域 + 主流 OAuth 提供商（`login.microsoftonline.com` / `accounts.google.com` / `github.com` / `login.weixin.qq.com` / `open.weixin.qq.com` / `graph.qq.com`）→ `NewWindowResponse::Allow`（应用内打开，与主窗口同浏览器进程、共享 Cookie，登录回调可完成）；其余域名 `Deny` 并交系统浏览器。**无条件 Allow 等于给 `target=_blank` 开了绕过 `on_navigation` 白名单的旁路**（Allow 弹窗的内部导航不经过 on_navigation）。
@@ -241,7 +241,7 @@ data\
 **实现位置**：`src-tauri/src/logging.rs`
 
 - 写入 `data\logs\deepseekchat*.log`，单文件上限 1MB，启动时清理为最近 4 个（磁盘约 5MB 上限）。
-- 时间戳用**本地时区**（`TimezoneStrategy::UseLocal`）；插件默认 UTC 与操作时间差整小时，排障对不上。注意它会连带覆盖默认 format（行格式变为 `[日期][时间][级别][target] 消息`）。
+- 时间戳用**本地时区**（`TimezoneStrategy::UseLocal`）；插件默认用 UTC，与本地时间相差整小时，排障对不上。注意它会连带覆盖默认 format（行格式变为 `[日期][时间][级别][target] 消息`）。
 - 记录：启动、数据目录初始化结果、窗口创建/唤起/隐藏、关闭行为、挂起/修剪/销毁、主题上报、导航失败与外链、配置保存、托盘菜单弹出与收起、导出结果、WebView2 引导安装（检测发生在 logger 安装之前，只记「曾由引导程序安装」这一结果）。
 - **脱敏**：生产版不主动记录 Cookie、请求头、带 token 的完整 URL、本地绝对路径或任意网页载荷；外链与主页只记动作或域名。任意页面日志回传只在 debug 构建启用。公开日志前仍需检查第三方错误文本中的账号、路径与凭据。
 - 生产构建 Info 级别、禁用 DevTools，日志是首要排障手段；debug 构建 Debug 级别并额外输出到 stdout。
@@ -254,7 +254,7 @@ data\
 - 安装模式二选一：全局安装（`Program Files`，需管理员）/ 当前用户安装（免管理员），均可改安装路径。
 - 语言：简体中文 + English，且 `displayLanguageSelector: true`。必须开启选择器：关闭时 NSIS 不会做系统语言自适应，英文系统同样看到中文向导。
 - Finish 页两枚勾选：桌面快捷方式（默认创建，复用 MUI 的 SHOWREADME 位）、开始菜单快捷方式（默认不创建）。开始菜单那枚是自建控件，**必须在页面 SHOW 回调里用 nsDialogs 创建**（此时才挂进同一个页面对话框、共享 DPI 缩放；用裸 `CreateWindowEx` 按像素定位会整枚落到向导图下面）。开机自启**不在安装向导里**，只在应用设置中提供。
-- 卸载：默认删除用户数据（`$INSTDIR\data` 与 `%APPDATA%\DeepSeekChat` 中实际存在者），勾选「保留用户数据」则跳过。
+- 卸载：默认删除用户数据（`$INSTDIR\data` 与 `%APPDATA%\DeepSeekChat` 中实际存在者），勾选「保留用户数据」则跳过；个别组件可能按 bundle identifier 写入的 `$APPDATA\com.deepseekchat.app` / `$LOCALAPPDATA\com.deepseekchat.app` 一并清理。
 - 安装/卸载向导图标：应用鲸鱼图标。
 - 体积门禁：>8MB 构建失败。
 
@@ -265,7 +265,7 @@ data\
 - 必须启用 `tauri/custom-protocol` feature，否则本地页仍路由到 devUrl、发布产物全白屏。
 - 双构建脚本使用相同的 `--remap-path-prefix`（仓库、用户目录、Cargo/Rustup 目录 → `/build`）；编译后运行 `scripts/check-release.mjs` 检查未压缩主程序：内嵌本地绝对路径、调试入口标记或已知凭据签名时阻止发布。
 - 体积门禁：>15MB 构建失败。
-- 卸载 = 删除 exe 与 `data\` 目录。开启过自启后手动删除程序，注册表 Run 键会残留指向不存在路径的键值（无实际影响），README 给出手动清理方法。
+- 卸载 = 删除 exe 与 `data\` 目录。开启过自启后手动删除程序，注册表 Run 键会残留指向不存在路径的键值（无实际影响），README 给出手动清理方法（见「已知限制」）。
 
 ### FR-17 图标与品牌
 **实现位置**：`scripts/gen-icon.mjs`、`src-tauri/icons/`
@@ -360,7 +360,7 @@ data\
 | 隐私 | 零遥测、零上报、数据全本地、日志脱敏、代理跟随系统；发布产物重映射构建机路径并经隐私扫描 | 满足 |
 | 兼容性 | Win10 1809+ / Win11 x64；WebView2 Evergreen 不锁版本；DPI PerMonitorV2 | 满足 |
 | 可靠性 | 断网兜底、渲染崩溃自愈、异常退出后不丢登录与设置、窗口坐标越界自动回退、配置文件损坏回退默认值、锁毒化恢复而非放弃 | 满足 |
-| 安全 | 生产版禁用 DevTools；导航/弹窗双白名单；`file:` 拦截；IPC 事件入口载荷校验（bg 白名单防 panic）；CSP 未设（外壳不注入自有内容，注入脚本仅主题/心跳/风控/快捷键/导出） | 已知取舍 |
+| 安全 | 生产版禁用 DevTools；导航/弹窗双白名单；`file:` 拦截；IPC 事件入口载荷校验（bg 白名单防 panic）；Tauri 层 CSP 未设（外壳不注入自有内容，注入脚本仅主题/心跳/风控/快捷键/导出），本地三页自带页面级 meta CSP | 已知取舍 |
 
 ---
 
@@ -397,20 +397,20 @@ data\
 | --- | --- | --- |
 | 1 | 产品形态 | 官网套壳，非 API 客户端 |
 | 2 | 技术栈 | Tauri 2；本地页 Vite + TS 原生，无框架 |
-| 3 | 内存指标 | 前台 ≤180MB / 托盘 ≤80MB，口径=专用工作集合计 |
+| 3 | 内存指标 | 前台 ≤100MB / 托盘 ≤30MB，口径=专用工作集合计 |
 | 4 | 省内存模式 | 默认关；默认态靠修剪+挂起达标 |
 | 5 | 标题栏 | 对标 deepseek-harness 两段式取色 |
 | 6 | 托盘行为 | 手动启动显示主窗、自启静默进托盘、关闭→托盘、左键切换、右键自绘菜单 |
 | 7 | 数据目录 | 跟随 exe，不可写回退 `%APPDATA%` 并在设置展示 |
 | 8 | WebView2 引导 | 绿色版内嵌 Bootstrapper；安装版 NSIS 引导 |
 | 9 | 外链策略 | 顶层导航白名单 + 弹窗白名单（DeepSeek 域 + OAuth 提供商），`file:` 拦截不外抛 |
-| 10 | 挂起恢复 | 接受销毁重建的短暂白屏，换 ≤80MB 硬指标 |
+| 10 | 挂起恢复 | 接受销毁重建的短暂白屏，换 ≤30MB 硬指标 |
 | 11 | 设置项 | 仅四项：自启 / 关闭行为 / 省内存 / 数据目录（另有项目主页入口） |
 | 12 | 安装包 | NSIS 全局/当前用户二选一，可改路径，Finish 页两枚勾选；自启只在应用设置里 |
 | 13 | 通知 | 不做（官网不推送） |
 | 14 | 设置窗生命周期 | 失焦自动隐藏（常驻不销毁，重开零等待） |
 | 15 | 协议/版本 | MIT；v0.1.0 |
-| 16 | 配置保存 | 串行锁 +「注册表 → 落盘 → 发布内存」；失败回滚注册表、内存态不动 |
+| 16 | 配置保存 | 串行锁 +「构建候选配置 → 注册表 → 落盘 → 发布内存」；失败回滚注册表、内存态不动 |
 | 17 | 省内存模式生效时机 | 浏览器参数启动时定格、重启才生效（WebView2 Environment 参数一致性硬约束） |
 | 18 | 发布隐私 | 路径重映射 `/build`；`check-release.mjs` 扫描绝对路径/调试入口/凭据签名，命中即阻止发布 |
 | 19 | 对话导出形态 | 内置注入脚本（参考 Chat2File 核心路径），不引入扩展运行时；零新增依赖 |
@@ -459,7 +459,7 @@ settings-ui/
 4. 不使用任何默认存储在 `%APPDATA%` 的插件，配置与窗口状态自写 `data\`，否则破坏便携语义。
 5. 三个本地页（`settings.html` / `menu.html` / `error.html`）的 `<head>` 必须保留 `<link rel="icon" href="data:,">`：不声明时 WebView2 会请求 `/favicon.ico`，资源协议里没有这个文件，`tauri::manager` 每次打开本地页都记一条 ERROR 噪音。
 6. `paths::init()`、`webview2_boot::ensure_runtime()` 跑在 `tauri::Builder` build 之前，此时 logger 尚未安装，二者内部的 `log::*` 一律不落盘。需要留痕的启动期事实在 `setup` 里补记，或在模块间用返回值传递。
-7. **注入 JS 内的正则必须写字面量 `/…/g，禁止 `new RegExp(string)`**——Rust 原始字符串里的 `\\S` 经 JS 解析再进 RegExp 构造器会被吃掉一层转义（实测 `.source` 变成 `(S+)`），且此类错误不报错、只让匹配静默失效；正则字面量无此问题。同理，类型标签匹配不得加 `i` 标志（防文件名里的小写扩展名误配）。
+7. **注入 JS 内的正则必须写字面量 `/…/g`，禁止 `new RegExp(string)`**——Rust 原始字符串里的 `\\S` 经 JS 解析再进 RegExp 构造器会被吃掉一层转义（实测 `.source` 变成 `(S+)`），且此类错误不报错、只让匹配静默失效；正则字面量无此问题。同理，类型标签匹配不得加 `i` 标志（防文件名里的小写扩展名误配）。
 
 ---
 
@@ -477,10 +477,11 @@ settings-ui/
 | `DSCHAT_DIALOG_PROBE=1` | 探测官网风控弹窗 DOM 结构（10/20/35 秒三批） | debug |
 | `DSCHAT_EXPORT_PROBE=1` | 探测官网对话 DOM 结构（FREQ/MDCHAIN/SIDE/KIDS/MSGS/ATTACH 六条回传），FR-22 抓取校准 | debug |
 | `DSCHAT_EXPORT_TEST=<格式名>` | 18 秒后自动点开侧栏首个会话并触发一次指定格式导出（菜单项文字匹配） | debug |
-| `measure-memory.ps1 -Mode foreground\|tray`（另可加 `-Monitor <秒>`） | 内存指标测量 | — |
+| `measure-memory.ps1 -Mode any\|foreground\|tray`（另可加 `-Monitor <秒>`） | 内存指标测量 | — |
 | `scripts/qa-memory.ps1` | 完整验收序列（空闲 5.5 分钟 → 隐藏挂起 → 唤起计时） | — |
 | `scripts/qa-windows.ps1` | 被动 UI QA：PrintWindow 截图、失焦实测、前台归属观察 | — |
 | `scripts/capture-window.ps1` / `click-at.ps1` / `diag-windows.ps1` | 单窗口截图 / 坐标点击 / 窗口枚举诊断 | — |
+| `scripts/test-check-release.cjs` | `check-release.mjs` 路径/凭据正则的单测（`node scripts/test-check-release.cjs`） | — |
 | `settings-ui/qa-toggle.html` | 设置页开关与分段胶囊的浏览器几何 QA 台（`cd settings-ui; npm run dev` 后开 `http://localhost:5173/qa-toggle.html`），自带 `invoke` 桩不依赖 Rust；不是 Vite 入口、不进产物 | 浏览器 |
 
 > 标注 debug 的入口只在 debug 构建参与编译（`#[cfg(debug_assertions)]`），release 产物不响应；`scripts/check-release.mjs` 会扫描发布主程序中的调试入口标记，出现即阻止发布。
